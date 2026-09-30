@@ -26,8 +26,8 @@ export default function AdminDashboard() {
     { label: 'Organizers', value: s?.totalOrganizers, href: '/admin/organizers' },
     { label: 'Suppliers', value: s?.totalSuppliers, href: '/admin/suppliers' },
     { label: 'Pending KYC', value: s?.pendingKyc, href: '/admin/suppliers?kyc=PENDING', highlight: !!s?.pendingKyc },
-    { label: 'Total events', value: s?.totalEvents },
-    { label: 'Pending events', value: s?.pendingEvents, highlight: !!s?.pendingEvents },
+    { label: 'Total events', value: s?.totalEvents, href: '/admin/events' },
+    { label: 'Pending events', value: s?.pendingEvents, href: '/admin/events?status=PENDING', highlight: !!s?.pendingEvents },
     { label: 'Active enrollments', value: s?.totalEnrollments },
   ];
 

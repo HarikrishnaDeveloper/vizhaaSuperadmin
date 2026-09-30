@@ -82,6 +82,15 @@ export function Card({ children, className = '' }: { children: React.ReactNode; 
   return <div className={`bg-white rounded-xl border border-slate-200 ${className}`}>{children}</div>;
 }
 
+// Event.status → label (matches the organizer app, except APPROVED shown there as "Confirmed")
+export const EVENT_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Pending approval',
+  APPROVED: 'Approved',
+  IN_PROGRESS: 'In progress',
+  COMPLETED: 'Completed',
+  REJECTED: 'Rejected',
+};
+
 const badgeStyles: Record<string, string> = {
   APPROVED: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
   COMPLETED: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20',
@@ -91,6 +100,8 @@ const badgeStyles: Record<string, string> = {
   PENDING: 'bg-amber-50 text-amber-700 ring-amber-600/20',
   ENROLLED: 'bg-sky-50 text-sky-700 ring-sky-600/20',
   OPEN: 'bg-sky-50 text-sky-700 ring-sky-600/20',
+  IN_PROGRESS: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20',
+  FILLED: 'bg-indigo-50 text-indigo-700 ring-indigo-600/20',
   REJECTED: 'bg-rose-50 text-rose-700 ring-rose-600/20',
   NO_SHOW: 'bg-rose-50 text-rose-700 ring-rose-600/20',
   DEBIT: 'bg-rose-50 text-rose-700 ring-rose-600/20',

@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import {
-  Avatar, Badge, Card, DetailRow, StateMessage, formatCurrency, formatDate, td, th, useApi,
+  Avatar, Badge, Card, DetailRow, EVENT_STATUS_LABELS, StateMessage, formatCurrency, formatDate, td, th, useApi,
 } from '@/lib/admin-ui';
 
 type Payment = { id: string; amount: number; purpose: string; status: string; isTest: boolean; createdAt: string };
@@ -43,6 +43,7 @@ type Organizer = {
 
 export default function OrganizerDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const { data, loading, error } = useApi<{ organizer: Organizer }>(`/admin/organizers/${id}`);
   const o = data?.organizer;
 
@@ -120,7 +121,7 @@ export default function OrganizerDetailPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {o.events.map((e) => (
-                      <tr key={e.id}>
+                      <tr key={e.id} onClick={() => router.push(`/admin/events/${e.id}`)} className="cursor-pointer hover:bg-slate-50">
                         <td className={td}>
                           <p className="font-medium text-slate-900">{e.name}</p>
                           <p className="text-xs text-slate-500">{e.type} · {e.city || e.location}</p>
@@ -132,7 +133,7 @@ export default function OrganizerDetailPage() {
                         <td className={td}>{e.menCount}M / {e.womenCount}W</td>
                         <td className={`${td} text-right`}>{formatCurrency(e.totalCost)}</td>
                         <td className={`${td} text-right`}>{formatCurrency(e.advancePaid)}</td>
-                        <td className={td}><Badge value={e.status} /></td>
+                        <td className={td}><Badge value={e.status} label={EVENT_STATUS_LABELS[e.status]} /></td>
                         <td className={td}>
                           {e.eventPost ? (
                             <span className="text-xs text-slate-600">
