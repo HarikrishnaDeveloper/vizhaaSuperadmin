@@ -106,6 +106,21 @@ const badgeStyles: Record<string, string> = {
   NO_SHOW: 'bg-rose-50 text-rose-700 ring-rose-600/20',
   DEBIT: 'bg-rose-50 text-rose-700 ring-rose-600/20',
   CANCELLED: 'bg-slate-100 text-slate-600 ring-slate-500/20',
+  // Supplier onboarding
+  DRAFT: 'bg-slate-100 text-slate-600 ring-slate-500/20',
+  KYC_PENDING: 'bg-sky-50 text-sky-700 ring-sky-600/20',
+  UNDER_REVIEW: 'bg-amber-50 text-amber-700 ring-amber-600/20',
+  SUSPENDED: 'bg-rose-50 text-rose-700 ring-rose-600/20',
+};
+
+// Supplier lifecycle (SupplierProfile.status), in onboarding order
+export const SUPPLIER_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Profile incomplete',
+  KYC_PENDING: 'Awaiting KYC',
+  UNDER_REVIEW: 'Under review',
+  APPROVED: 'Approved',
+  REJECTED: 'Rejected',
+  SUSPENDED: 'Suspended',
 };
 
 export function Badge({ value, label }: { value?: string | null; label?: string }) {

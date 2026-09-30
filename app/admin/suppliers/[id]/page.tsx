@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import apiClient from '@/lib/api-client';
 import {
-  Avatar, Badge, Card, DetailRow, StateMessage, apiError, formatCurrency, formatDate, td, th, useApi,
+  Avatar, Badge, Card, DetailRow, StateMessage, SUPPLIER_STATUS_LABELS, apiError, formatCurrency, formatDate, td, th, useApi,
 } from '@/lib/admin-ui';
 
 type Enrollment = {
@@ -28,6 +28,21 @@ type Supplier = {
   createdAt: string;
   supplierProfile: {
     id: string;
+    status: string;
+    statusReason: string | null;
+    ownerName: string | null;
+    email: string | null;
+    gender: string | null;
+    dob: string | null;
+    businessName: string | null;
+    businessType: string | null;
+    address: string | null;
+    city: string | null;
+    state: string | null;
+    pincode: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    transportMode: string | null;
     aadhaarFrontUrl: string | null;
     aadhaarBackUrl: string | null;
     panCardUrl: string | null;
@@ -63,27 +78,58 @@ export default function SupplierDetailPage() {
       <BackLink />
 
       <div className="flex items-center gap-4 mb-6">
-        <Avatar name={s.name} />
+        <Avatar name={p?.ownerName || s.name} />
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">{s.name || 'Unnamed supplier'}</h1>
-          <p className="text-sm text-slate-500">{s.mobile} · Joined {formatDate(s.createdAt)}</p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold text-slate-900">{p?.ownerName || s.name || 'Unnamed supplier'}</h1>
+            {p && <Badge value={p.status} label={SUPPLIER_STATUS_LABELS[p.status]} />}
+          </div>
+          <p className="text-sm text-slate-500">
+            {p?.businessName ? `${p.businessName} · ` : ''}{s.mobile} · Joined {formatDate(s.createdAt)}
+          </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="space-y-6">
           <Card className="p-5">
-            <h2 className="text-sm font-semibold text-slate-900 mb-2">Profile</h2>
+            <h2 className="text-sm font-semibold text-slate-900 mb-2">Basic details</h2>
             <dl>
+              <DetailRow label="Owner name" value={p?.ownerName || s.name} />
               <DetailRow label="Mobile" value={s.mobile} />
-              <DetailRow label="Email" value={s.email} />
-              <DetailRow label="Gender" value={s.gender} />
-              <DetailRow label="Date of birth" value={s.dob} />
-              <DetailRow label="City" value={s.city} />
-              <DetailRow label="Address" value={s.address} />
-              <DetailRow label="Wallet balance" value={formatCurrency(p?.walletBalance)} />
+              <DetailRow label="Email" value={p?.email || s.email} />
+              <DetailRow label="Gender" value={p?.gender || s.gender} />
+              <DetailRow label="Date of birth" value={p?.dob || s.dob} />
+              <DetailRow label="Business type" value={p?.businessType} />
+              <DetailRow label="Business name" value={p?.businessName} />
             </dl>
           </Card>
+
+          <Card className="p-5">
+            <h2 className="text-sm font-semibold text-slate-900 mb-2">Address</h2>
+            <dl>
+              <DetailRow label="Address" value={p?.address || s.address} />
+              <DetailRow label="City" value={p?.city || s.city} />
+              <DetailRow label="State" value={p?.state} />
+              <DetailRow label="Pincode" value={p?.pincode} />
+              <DetailRow label="Transport" value={p?.transportMode && p.transportMode.replace(/^\w/, (c) => c.toUpperCase())} />
+              <DetailRow
+                label="Location"
+                value={p?.latitude != null && p?.longitude != null && (
+                  <a
+                    href={`https://www.google.com/maps?q=${p.latitude},${p.longitude}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-indigo-600 hover:text-indigo-500"
+                  >
+                    View on map
+                  </a>
+                )}
+              />
+            </dl>
+          </Card>
+
+          {p && <AccountCard userId={s.id} profile={p} onChange={reload} />}
         </div>
 
         <div className="lg:col-span-2 space-y-6">
@@ -265,6 +311,8 @@ function KycCard({ profile: p, onChange }: { profile: Supplier['supplierProfile'
                 </button>
               </div>
             </div>
+          ) : p!.status === 'SUSPENDED' ? (
+            <p className="mt-4 text-sm text-slate-500">Reinstate this supplier before changing their KYC decision.</p>
           ) : (
             <div className="mt-4 flex gap-2">
               {p!.kycStatus !== 'APPROVED' && (
@@ -288,6 +336,90 @@ function KycCard({ profile: p, onChange }: { profile: Supplier['supplierProfile'
             </div>
           )}
         </>
+      )}
+    </Card>
+  );
+}
+
+// Suspend an active supplier, or reinstate a suspended one (PUT /admin/suppliers/:id/status)
+function AccountCard({ userId, profile: p, onChange }: {
+  userId: string;
+  profile: NonNullable<Supplier['supplierProfile']>;
+  onChange: () => void;
+}) {
+  const [suspending, setSuspending] = useState(false);
+  const [reason, setReason] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const suspended = p.status === 'SUSPENDED';
+
+  const setStatus = async (status: 'SUSPENDED' | 'APPROVED') => {
+    setBusy(true);
+    setError('');
+    try {
+      await apiClient.put(`/admin/suppliers/${userId}/status`, { status, reason: reason.trim() || undefined });
+      setSuspending(false);
+      setReason('');
+      onChange();
+    } catch (err) {
+      setError(apiError(err, 'Could not update the account.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Card className="p-5">
+      <h2 className="text-sm font-semibold text-slate-900 mb-1">Account</h2>
+      <p className="text-sm text-slate-500 mb-4">
+        {suspended
+          ? `Suspended${p.statusReason ? `: ${p.statusReason}` : ''}. The supplier can't edit their profile or take work.`
+          : 'Suspending blocks this supplier from editing their profile and taking work.'}
+      </p>
+
+      {error && <p className="mb-3 text-sm text-rose-600">{error}</p>}
+
+      {suspended ? (
+        p.kycStatus === 'APPROVED' ? (
+          <button
+            disabled={busy}
+            onClick={() => setStatus('APPROVED')}
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
+          >
+            {busy ? 'Saving…' : 'Reinstate supplier'}
+          </button>
+        ) : (
+          <p className="text-xs text-slate-400">Only suppliers with approved KYC can be reinstated.</p>
+        )
+      ) : suspending ? (
+        <div className="space-y-3">
+          <textarea
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            rows={2}
+            placeholder="Reason shown to the supplier (optional)"
+            className="w-full rounded-lg border border-slate-300 px-3.5 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
+          />
+          <div className="flex gap-2">
+            <button
+              disabled={busy}
+              onClick={() => setStatus('SUSPENDED')}
+              className="rounded-lg bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-500 disabled:opacity-60"
+            >
+              Confirm suspension
+            </button>
+            <button onClick={() => setSuspending(false)} className="rounded-lg px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100">
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setSuspending(true)}
+          className="rounded-lg border border-rose-200 px-4 py-2 text-sm font-medium text-rose-600 hover:bg-rose-50"
+        >
+          Suspend supplier
+        </button>
       )}
     </Card>
   );

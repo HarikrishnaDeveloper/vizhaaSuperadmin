@@ -3,35 +3,43 @@
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  Avatar, Badge, Card, PageHeader, SearchInput, StateMessage, formatCurrency, formatDate, td, th, useApi, useDebounced,
+  Avatar, Badge, Card, PageHeader, SearchInput, StateMessage, SUPPLIER_STATUS_LABELS, formatCurrency, formatDate, td, th, useApi, useDebounced,
 } from '@/lib/admin-ui';
 
 type Supplier = {
   id: string;
   name: string | null;
   mobile: string;
-  gender: string | null;
   city: string | null;
   createdAt: string;
   supplierProfile: {
     id: string;
+    status: string;
     kycStatus: string;
     walletBalance: number;
     kycSubmittedAt: string | null;
+    businessName: string | null;
+    businessType: string | null;
+    city: string | null;
     _count: { enrollments: number };
   } | null;
 };
 
-// Effective KYC state: a profile is only "pending review" once documents are submitted
-const kycState = (s: Supplier) => (s.supplierProfile?.kycSubmittedAt ? s.supplierProfile.kycStatus : 'NOT_SUBMITTED');
+const statusOf = (s: Supplier) => s.supplierProfile?.status ?? 'DRAFT';
 
+// Needs-action first, then the rest of the lifecycle
 const TABS = [
   { key: 'ALL', label: 'All' },
-  { key: 'PENDING', label: 'Pending review' },
+  { key: 'UNDER_REVIEW', label: 'Under review' },
   { key: 'APPROVED', label: 'Approved' },
   { key: 'REJECTED', label: 'Rejected' },
-  { key: 'NOT_SUBMITTED', label: 'Not submitted' },
+  { key: 'KYC_PENDING', label: 'Awaiting KYC' },
+  { key: 'DRAFT', label: 'Profile incomplete' },
+  { key: 'SUSPENDED', label: 'Suspended' },
 ];
+
+// Older links (e.g. the dashboard's "Pending KYC" card) use ?kyc=PENDING
+const LEGACY_TABS: Record<string, string> = { PENDING: 'UNDER_REVIEW', NOT_SUBMITTED: 'KYC_PENDING' };
 
 export default function SuppliersPage() {
   return (
@@ -51,20 +59,21 @@ function Suppliers() {
     `/admin/suppliers${q ? `?q=${encodeURIComponent(q)}` : ''}`
   );
 
-  // Dashboard links here with ?kyc=PENDING; an explicit tab click takes over
-  const kycParam = searchParams.get('kyc');
-  const tab = selectedTab ?? (TABS.some((t) => t.key === kycParam) ? kycParam! : 'ALL');
+  // Links may preselect a tab with ?status=… (or the older ?kyc=…); a tab click takes over
+  const param = searchParams.get('status') ?? searchParams.get('kyc') ?? '';
+  const linked = LEGACY_TABS[param] ?? param;
+  const tab = selectedTab ?? (TABS.some((t) => t.key === linked) ? linked : 'ALL');
 
   const all = data?.suppliers || [];
-  const suppliers = tab === 'ALL' ? all : all.filter((s) => kycState(s) === tab);
-  const count = (key: string) => (key === 'ALL' ? all.length : all.filter((s) => kycState(s) === key).length);
+  const suppliers = tab === 'ALL' ? all : all.filter((s) => statusOf(s) === tab);
+  const count = (key: string) => (key === 'ALL' ? all.length : all.filter((s) => statusOf(s) === key).length);
 
   return (
     <>
       <PageHeader
         title="Suppliers"
-        subtitle="Event staff, their KYC status and wallets"
-        action={<SearchInput value={search} onChange={setSearch} placeholder="Search name, mobile, city" />}
+        subtitle="Supplier onboarding, verification and wallets"
+        action={<SearchInput value={search} onChange={setSearch} placeholder="Search name, business, mobile, city" />}
       />
 
       <div className="flex gap-1 overflow-x-auto mb-4 -mx-1 px-1">
@@ -95,9 +104,9 @@ function Suppliers() {
               <thead className="bg-slate-50">
                 <tr>
                   <th className={th}>Supplier</th>
-                  <th className={th}>Gender</th>
+                  <th className={th}>Business</th>
                   <th className={th}>City</th>
-                  <th className={th}>KYC</th>
+                  <th className={th}>Status</th>
                   <th className={`${th} text-right`}>Enrollments</th>
                   <th className={`${th} text-right`}>Wallet</th>
                   <th className={th}>Joined</th>
@@ -115,9 +124,12 @@ function Suppliers() {
                         </div>
                       </div>
                     </td>
-                    <td className={td}>{s.gender || '—'}</td>
-                    <td className={td}>{s.city || '—'}</td>
-                    <td className={td}><Badge value={kycState(s)} label={kycState(s) === 'PENDING' ? 'Pending review' : undefined} /></td>
+                    <td className={td}>
+                      <p className="text-slate-900">{s.supplierProfile?.businessName || '—'}</p>
+                      <p className="text-xs text-slate-500">{s.supplierProfile?.businessType || ''}</p>
+                    </td>
+                    <td className={td}>{s.supplierProfile?.city || s.city || '—'}</td>
+                    <td className={td}><Badge value={statusOf(s)} label={SUPPLIER_STATUS_LABELS[statusOf(s)]} /></td>
                     <td className={`${td} text-right`}>{s.supplierProfile?._count.enrollments ?? 0}</td>
                     <td className={`${td} text-right`}>{formatCurrency(s.supplierProfile?.walletBalance)}</td>
                     <td className={td}>{formatDate(s.createdAt)}</td>
