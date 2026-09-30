@@ -1,136 +1,151 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
+import apiClient from '@/lib/api-client';
+import { initials } from '@/lib/admin-ui';
+
+type AdminUser = { id: string; name?: string; email?: string; role: string };
+
+const subscribeStorage = (onChange: () => void) => {
+  window.addEventListener('storage', onChange);
+  return () => window.removeEventListener('storage', onChange);
+};
+
+const NAV = [
+  {
+    href: '/admin/dashboard',
+    label: 'Dashboard',
+    icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6',
+  },
+  {
+    href: '/admin/organizers',
+    label: 'Organizers',
+    icon: 'M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4',
+  },
+  {
+    href: '/admin/suppliers',
+    label: 'Suppliers',
+    icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z',
+  },
+];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const isLogin = pathname === '/admin/login';
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  // undefined during server render / hydration, then the stored JSON (or null)
+  const storedUser = useSyncExternalStore(subscribeStorage, () => localStorage.getItem('user'), () => undefined);
+  const parsedUser = useMemo(() => {
+    try {
+      return storedUser ? (JSON.parse(storedUser) as AdminUser) : null;
+    } catch {
+      return null;
+    }
+  }, [storedUser]);
+  const user = parsedUser?.role === 'ADMIN' ? parsedUser : null;
 
   useEffect(() => {
-    // Skip auth check for login page
-    if (pathname === '/admin/login') {
-      setIsAuthorized(true);
-      return;
-    }
+    if (isLogin || storedUser === undefined) return;
+    if (!parsedUser || !localStorage.getItem('accessToken')) router.replace('/admin/login');
+    else if (parsedUser.role !== 'ADMIN') router.replace('/admin/login?error=unauthorized');
+  }, [isLogin, storedUser, parsedUser, router]);
 
-    const storedUser = localStorage.getItem('user');
-    if (!storedUser) {
-      router.replace('/admin/login');
-      return;
-    }
-    
-    const parsedUser = JSON.parse(storedUser);
-    if (parsedUser.role !== 'ADMIN') {
-      router.replace('/admin/login?error=unauthorized');
-      return;
-    }
-    
-    setUser(parsedUser);
-    setIsAuthorized(true);
-  }, [pathname, router]);
+  if (isLogin) return <>{children}</>;
 
-  if (!isAuthorized) {
-    return <div className="min-h-screen bg-slate-950 flex items-center justify-center text-white">Loading...</div>;
+  if (!user) {
+    return <div className="min-h-screen bg-slate-50 flex items-center justify-center text-sm text-slate-400">Loading…</div>;
   }
 
-  // If it's the login page, just render the content without sidebar
-  if (pathname === '/admin/login') {
-    return <>{children}</>;
-  }
+  const logout = async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
+    await apiClient.post('/auth/logout', { refreshToken }).catch(() => {});
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('user');
+    router.replace('/admin/login');
+  };
 
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex">
-      {/* Sidebar - Strictly for Admin */}
-      <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col text-slate-300">
-        <div className="p-6 border-b border-slate-800">
-           <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-indigo-600 rounded flex items-center justify-center shadow-[0_0_15px_rgba(79,70,229,0.5)]">
-                 <span className="text-white font-bold">V</span>
-              </div>
-              <div>
-                <h2 className="text-sm font-black text-white tracking-wider uppercase">Vizhaa</h2>
-                <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest">Admin Control</p>
-              </div>
-           </div>
+  const sidebar = (
+    <div className="flex h-full flex-col">
+      <div className="flex items-center gap-3 px-5 h-16 border-b border-slate-200">
+        <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+          <span className="text-white text-sm font-bold">V</span>
         </div>
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 mt-4 px-3">Overview</div>
-          <NavItem href="/admin/dashboard" icon="🧭" label="Dashboard" active={pathname === '/admin/dashboard'} />
-          <NavItem href="/admin/reports" icon="📊" label="Reports & Analytics" active={pathname === '/admin/reports'} />
-          
-          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 mt-6 px-3">Operations</div>
-          <NavItem href="/admin/events" icon="📅" label="Event Management" active={pathname === '/admin/events'} />
-          <NavItem href="/admin/workers" icon="👷" label="Workforce Management" active={pathname === '/admin/workers'} />
-          <NavItem href="/admin/kyc" icon="🛡️" label="KYC Approvals" active={pathname === '/admin/kyc'} />
-          
-          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 mt-6 px-3">Finance</div>
-          <NavItem href="/admin/wallet" icon="💰" label="Wallet & Payments" active={pathname === '/admin/wallet'} />
-          
-          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 mt-6 px-3">System</div>
-          <NavItem href="/admin/attendance" icon="🚨" label="Issues & Attendance" active={pathname === '/admin/attendance'} />
-          <NavItem href="/admin/settings" icon="⚙️" label="System Settings" active={pathname === '/admin/settings'} />
-        </nav>
-        <div className="p-4 border-t border-slate-800">
-           <div className="flex items-center justify-between px-3 py-2 mb-4 bg-slate-800/50 rounded-lg">
-              <div className="flex items-center space-x-2">
-                 <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
-                 <span className="text-xs font-medium text-slate-300">System Online</span>
-              </div>
-           </div>
-           <button 
-             onClick={() => {
-               localStorage.clear();
-               router.push('/admin/login');
-             }}
-             className="w-full flex items-center space-x-3 px-4 py-2.5 text-sm text-red-400 font-semibold hover:bg-red-500/10 rounded-lg transition-all border border-transparent hover:border-red-500/20"
-           >
-             <span>🚪</span>
-             <span>Secure Logout</span>
-           </button>
+        <div className="leading-tight">
+          <p className="text-sm font-semibold text-slate-900">Vizhaa</p>
+          <p className="text-xs text-slate-500">Admin</p>
         </div>
-      </aside>
+      </div>
 
-      {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 bg-slate-50 dark:bg-slate-950">
-        <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between px-8">
-          <div className="flex items-center space-x-4">
-             <span className="text-slate-400">/</span>
-             <h1 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-               {pathname.split('/').pop() || 'Dashboard'}
-             </h1>
+      <nav className="flex-1 p-3 space-y-1">
+        {NAV.map((item) => {
+          const active = pathname === item.href || pathname.startsWith(item.href + '/');
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMenuOpen(false)}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                active ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <svg className="h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={1.6} stroke="currentColor" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" d={item.icon} />
+              </svg>
+              {item.label}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="border-t border-slate-200 p-3">
+        <div className="flex items-center gap-3 px-2 py-2">
+          <div className="h-8 w-8 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-semibold">
+            {initials(user.name || user.email)}
           </div>
-          <div className="flex items-center space-x-6">
-             <button className="text-slate-400 hover:text-white transition-colors relative">
-                <span>🔔</span>
-                <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-             </button>
-             <div className="flex items-center space-x-3 border-l border-slate-200 dark:border-slate-800 pl-6">
-                <div className="text-right">
-                   <p className="text-sm font-bold text-slate-900 dark:text-white">{user?.name}</p>
-                   <p className="text-[10px] text-emerald-500 font-bold uppercase tracking-widest">Authorized</p>
-                </div>
-                <div className="w-9 h-9 bg-slate-800 rounded flex items-center justify-center text-white font-bold border border-slate-700">
-                  {user?.name?.charAt(0)}
-                </div>
-             </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium text-slate-900">{user.name || 'Admin'}</p>
+            <p className="truncate text-xs text-slate-500">{user.email}</p>
           </div>
-        </header>
-        <div className="flex-1 overflow-y-auto">
-          {children}
         </div>
-      </main>
+        <button
+          onClick={logout}
+          className="mt-1 w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-rose-600 transition"
+        >
+          Sign out
+        </button>
+      </div>
     </div>
   );
-}
 
-function NavItem({ icon, label, active = false, href = "#" }: any) {
   return (
-    <a href={href} className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${active ? 'bg-indigo-600/10 text-indigo-400 border border-indigo-500/20 shadow-[inset_0_0_20px_rgba(79,70,229,0.05)]' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent'}`}>
-      <span className="text-base opacity-80">{icon}</span>
-      <span>{label}</span>
-    </a>
+    <div className="min-h-screen bg-slate-50 text-slate-900">
+      {/* Desktop sidebar */}
+      <aside className="hidden md:fixed md:inset-y-0 md:flex md:w-60 md:flex-col bg-white border-r border-slate-200">{sidebar}</aside>
+
+      {/* Mobile sidebar */}
+      {menuOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div className="absolute inset-0 bg-slate-900/30" onClick={() => setMenuOpen(false)} />
+          <aside className="absolute inset-y-0 left-0 w-64 bg-white shadow-xl">{sidebar}</aside>
+        </div>
+      )}
+
+      <div className="md:pl-60">
+        <header className="md:hidden sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4">
+          <button onClick={() => setMenuOpen(true)} className="-ml-1 p-1.5 text-slate-600" aria-label="Open menu">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.6} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+          <span className="text-sm font-semibold">Vizhaa Admin</span>
+        </header>
+        <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">{children}</main>
+      </div>
+    </div>
   );
 }

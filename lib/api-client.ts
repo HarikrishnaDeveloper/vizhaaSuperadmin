@@ -29,7 +29,10 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // A 401 from a login call means bad credentials, not an expired session
+    const isAuthCall = originalRequest?.url?.startsWith('/auth/');
+
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthCall) {
       originalRequest._retry = true;
 
       try {
@@ -45,7 +48,8 @@ apiClient.interceptors.response.use(
         // Redirect to login or logout user
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
+        localStorage.removeItem('user');
+        window.location.href = window.location.pathname.startsWith('/admin') ? '/admin/login' : '/login';
         return Promise.reject(refreshError);
       }
     }
