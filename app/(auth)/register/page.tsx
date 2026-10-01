@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import apiClient from '@/lib/api-client';
@@ -18,6 +18,14 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  // Preselect the role when arriving from a marketing CTA (e.g. /register?role=SUPPLIER)
+  useEffect(() => {
+    const role = new URLSearchParams(window.location.search).get('role');
+    if (role === 'SUPPLIER' || role === 'ORGANIZER') {
+      setFormData((prev) => ({ ...prev, role }));
+    }
+  }, []);
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();

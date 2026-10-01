@@ -10,6 +10,25 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-jakarta), var(--font-geist-sans), sans-serif;
+}
+
+/* Marketing site palette */
+@theme {
+  --color-brand-50: #eef5ff;
+  --color-brand-100: #dbe9ff;
+  --color-brand-200: #bfd8ff;
+  --color-brand-500: #2a7bff;
+  --color-brand-600: #0b66f6;
+  --color-brand-700: #0852cc;
+  --color-ink: #0b1324;
+  --color-ink-soft: #4a5468;
+  --color-ink-mute: #7a8396;
+  --color-mist: #f5f8fe;
+  --color-line: #e6ecf5;
+  --shadow-card: 0 1px 2px rgb(15 35 75 / 0.04), 0 12px 32px -12px rgb(15 35 75 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(15 35 75 / 0.05), 0 24px 48px -16px rgb(15 35 75 / 0.2);
+  --shadow-brand: 0 10px 24px -8px rgb(11 102 246 / 0.55);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -23,4 +42,30 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Arc-edged photo frame used across the marketing hero sections */
+@utility arc-left {
+  clip-path: ellipse(100% 135% at 100% 50%);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.rise {
+  animation: rise 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
 }
