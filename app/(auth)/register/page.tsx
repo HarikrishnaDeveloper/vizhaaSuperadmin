@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import apiClient from '@/lib/api-client';
+import { VizhaaMark } from '@/lib/brand';
 
 export default function RegisterPage() {
   const [step, setStep] = useState(1); // 1: Info, 2: OTP
@@ -68,9 +69,7 @@ export default function RegisterPage() {
         <div className="bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl overflow-hidden border border-slate-100 dark:border-zinc-800">
           <div className="p-8 sm:p-12">
             <div className="flex justify-center mb-8">
-               <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-none">
-                  <span className="text-white text-3xl font-bold">V</span>
-               </div>
+               <VizhaaMark height={52} />
             </div>
             
             <h2 className="text-3xl font-bold text-slate-900 dark:text-white text-center mb-2">Create Account</h2>

@@ -4,6 +4,7 @@ import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import apiClient from '@/lib/api-client';
 import { apiError } from '@/lib/admin-ui';
+import { VizhaaMark } from '@/lib/brand';
 
 export default function AdminLoginPage() {
   return (
@@ -52,9 +53,7 @@ function AdminLogin() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-8">
-          <div className="h-11 w-11 rounded-xl bg-indigo-600 flex items-center justify-center shadow-sm">
-            <span className="text-white text-lg font-bold">V</span>
-          </div>
+          <VizhaaMark height={38} />
           <h1 className="mt-5 text-2xl font-semibold tracking-tight text-slate-900">Sign in to Vizhaa Admin</h1>
           <p className="mt-1.5 text-sm text-slate-500">Manage organizers, suppliers and events</p>
         </div>

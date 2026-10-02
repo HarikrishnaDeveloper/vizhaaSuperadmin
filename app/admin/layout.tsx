@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import apiClient from '@/lib/api-client';
 import { initials } from '@/lib/admin-ui';
+import { VizhaaMark } from '@/lib/brand';
 
 type AdminUser = { id: string; name?: string; email?: string; role: string };
 
@@ -77,9 +78,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const sidebar = (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-3 px-5 h-16 border-b border-slate-200">
-        <div className="h-8 w-8 rounded-lg bg-indigo-600 flex items-center justify-center">
-          <span className="text-white text-sm font-bold">V</span>
-        </div>
+        <VizhaaMark height={28} />
         <div className="leading-tight">
           <p className="text-sm font-semibold text-slate-900">Vizhaa</p>
           <p className="text-xs text-slate-500">Admin</p>
@@ -147,6 +146,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
             </svg>
           </button>
+          <VizhaaMark height={22} />
           <span className="text-sm font-semibold">Vizhaa Admin</span>
         </header>
         <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">{children}</main>

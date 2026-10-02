@@ -168,18 +168,3 @@ export const Briefcase = (p: IconProps) => (
     <path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7M3.5 12.5h17" />
   </Base>
 );
-
-export function LogoMark(p: IconProps) {
-  return (
-    <svg viewBox="0 0 32 28" aria-hidden="true" {...p}>
-      <defs>
-        <linearGradient id="vz-a" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#3b8cff" />
-          <stop offset="1" stopColor="#0852cc" />
-        </linearGradient>
-      </defs>
-      <path d="M0 0h8.5L16 15.5 23.5 0H32L18.6 27.4h-5.2L0 0Z" fill="url(#vz-a)" />
-      <path d="M8.5 0 16 15.5l-2.6 5.3L4.2 0h4.3Z" fill="#0852cc" opacity=".35" />
-    </svg>
-  );
-}

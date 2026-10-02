@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Close, LogoMark, Menu } from "./icons";
+import { VizhaaMark } from "@/lib/brand";
+import { Close, Menu } from "./icons";
 import { navLinks } from "./nav";
 
 export function Logo() {
   return (
     <Link href="/" className="flex items-center gap-2.5" aria-label="Vizhaa home">
-      <LogoMark className="h-7 w-8" />
+      <VizhaaMark height={28} priority />
       <span className="font-display text-[1.35rem] font-extrabold tracking-[-0.02em] text-ink">VIZHAA</span>
     </Link>
   );

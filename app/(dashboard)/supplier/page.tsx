@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { VizhaaMark } from '@/lib/brand';
 
 export default function SupplierDashboard() {
   const [user, setUser] = useState<any>(null);
@@ -24,9 +25,7 @@ export default function SupplierDashboard() {
       {/* Mobile Header */}
       <header className="md:hidden bg-white dark:bg-zinc-900 p-4 border-b border-slate-200 dark:border-zinc-800 flex justify-between items-center">
          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-               <span className="text-white text-xs font-bold">V</span>
-            </div>
+            <VizhaaMark height={28} />
             <span className="text-lg font-bold text-slate-900 dark:text-white">Vizhaa Worker</span>
          </div>
          <div className="w-8 h-8 bg-slate-200 dark:bg-zinc-800 rounded-full"></div>
@@ -36,9 +35,7 @@ export default function SupplierDashboard() {
       <aside className="w-64 bg-white dark:bg-zinc-900 border-r border-slate-200 dark:border-zinc-800 flex flex-col hidden md:flex">
         <div className="p-6 border-b border-slate-200 dark:border-zinc-800">
            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
-                 <span className="text-white font-bold">V</span>
-              </div>
+              <VizhaaMark height={32} />
               <span className="text-xl font-bold text-slate-900 dark:text-white">Vizhaa</span>
            </div>
         </div>
